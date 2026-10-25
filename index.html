@@ -723,6 +723,7 @@
     let speechRecognition = null;
     let spectrumInterval = null;
     let wavePhase = 0;
+    let recognizedTranscriptBuffer = '';
 
     const THEMES = {
       light: { bg: '#F8FAFC', card: '#FFFFFF', border: '#CBD5E1', text: '#0F172A', subtext: '#64748B', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#F1F5F9', primaryBtn: '#4F46E5', recordBtn: '#EF4444', saveBtn: '#10B981', dropdownBg: '#FFFFFF' },
@@ -901,7 +902,7 @@
       }
     }
 
-    // RECORDING ENGINE WITH FIXED SPEECH RECOGNITION PARSING
+    // RECORDING ENGINE WITH AUTO-RESTART LOOP FOR MOBILE
     async function toggleRecording() {
       if (isRecording) {
         stopRecording();
@@ -950,33 +951,47 @@
         };
 
         mediaRecorder.start(100);
+        recognizedTranscriptBuffer = '';
 
-        // SPEECH RECOGNITION (CORRECTED API INDEXING: e.results[i][0].transcript)
+        // SPEECH RECOGNITION (MOBILE OPTIMIZED: continuous=false WITH AUTO-RESTART LOOP)
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRec) {
           try {
             speechRecognition = new SpeechRec();
-            speechRecognition.continuous = true;
+            speechRecognition.continuous = false;
             speechRecognition.interimResults = true;
             speechRecognition.lang = selectedLang === 'Urdu' ? 'ur-PK' : 'en-US';
 
             speechRecognition.onresult = e => {
-              let fullText = '';
+              let chunkText = '';
               for (let i = 0; i < e.results.length; i++) {
                 if (e.results[i] && e.results[i][0] && typeof e.results[i][0].transcript === 'string') {
-                  fullText += e.results[i][0].transcript;
+                  chunkText += e.results[i][0].transcript;
                 }
               }
-              fullText = fullText.replace(/undefined/gi, '');
-              if (fullText.trim()) {
-                document.getElementById('spokenText').value = fullText;
+              chunkText = chunkText.replace(/undefined/gi, '').trim();
+              if (chunkText) {
+                const combined = (recognizedTranscriptBuffer + ' ' + chunkText).trim();
+                document.getElementById('spokenText').value = combined;
               }
               updateSaveBtnState();
             };
 
             speechRecognition.onerror = err => {
               console.log('Speech Recognition error:', err);
-              document.getElementById('visualizerStatus').innerText = '🔴 Recording Audio (Live Speech Transcriber Offline)';
+              const eStr = err.error || 'error';
+              if (eStr !== 'no-speech' && eStr !== 'aborted') {
+                document.getElementById('visualizerStatus').innerText = `🔴 Live Recording (${eStr})`;
+              }
+            };
+
+            speechRecognition.onend = () => {
+              const currentVal = document.getElementById('spokenText').value.trim();
+              if (currentVal) recognizedTranscriptBuffer = currentVal;
+
+              if (isRecording) {
+                try { speechRecognition.start(); } catch(e){}
+              }
             };
 
             speechRecognition.start();
@@ -984,7 +999,7 @@
             console.log('Speech Recognition init skipped:', srErr);
           }
         } else {
-          document.getElementById('visualizerStatus').innerText = '🔴 Recording Audio (Type or speak via mobile keyboard)';
+          document.getElementById('visualizerStatus').innerText = '🔴 Live Recording Active (Use keyboard mic for voice-to-text)';
         }
 
         isRecording = true;
@@ -1025,10 +1040,9 @@
       document.getElementById('visualizerStatus').innerText = '🎙️ Microphone Standby';
       stopSpectrumBars();
 
-      // Buffer to allow audio Blob conversion to finish
       setTimeout(() => {
         updateSaveBtnState();
-      }, 300);
+      }, 350);
     }
 
     // ANIMATED SPECTRUM
@@ -1117,11 +1131,16 @@
       if (!translated) translated = rawText;
 
       const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const dateIso = `${yyyy}-${mm}-${dd}`;
+
       const newEntry = {
         id: Date.now().toString(),
         timestamp: now.toLocaleString(),
         createdTime: now.getTime(),
-        isoDate: now.toISOString().split('T')[0],
+        isoDate: dateIso,
         category: selectedCategory === 'Auto-Detect' ? autoClassify(translated) : selectedCategory,
         originalLang: selectedLang,
         originalText: rawText,
@@ -1177,11 +1196,15 @@
       let filtered = entries.filter(e => {
         if (categoryFilter !== 'All' && e.category !== categoryFilter) return false;
 
-        const now = Date.now();
-        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+
         if (dateFilter === 'Today') return e.isoDate === todayStr;
-        if (dateFilter === 'Past 7 Days') return e.createdTime >= now - 7*24*60*60*1000;
-        if (dateFilter === 'Past 30 Days') return e.createdTime >= now - 30*24*60*60*1000;
+        if (dateFilter === 'Past 7 Days') return e.createdTime >= Date.now() - 7*24*60*60*1000;
+        if (dateFilter === 'Past 30 Days') return e.createdTime >= Date.now() - 30*24*60*60*1000;
         return true;
       });
 
