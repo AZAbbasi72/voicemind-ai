@@ -901,7 +901,7 @@
       }
     }
 
-    // RECORDING ENGINE WITH ACCURATE WEB SPEECH TRANSCRIPTION
+    // RECORDING ENGINE WITH FIXED SPEECH RECOGNITION PARSING
     async function toggleRecording() {
       if (isRecording) {
         stopRecording();
@@ -951,7 +951,7 @@
 
         mediaRecorder.start(100);
 
-        // SPEECH RECOGNITION (CORRECTED API READ: e.results[i][0].transcript)
+        // SPEECH RECOGNITION (CORRECTED API INDEXING: e.results[i][0].transcript)
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRec) {
           try {
@@ -976,7 +976,7 @@
 
             speechRecognition.onerror = err => {
               console.log('Speech Recognition error:', err);
-              document.getElementById('visualizerStatus').innerText = '🔴 Recording Audio (Speech API Offline)';
+              document.getElementById('visualizerStatus').innerText = '🔴 Recording Audio (Live Speech Transcriber Offline)';
             };
 
             speechRecognition.start();
@@ -984,7 +984,7 @@
             console.log('Speech Recognition init skipped:', srErr);
           }
         } else {
-          document.getElementById('visualizerStatus').innerText = '🔴 Recording Audio (Use Keyboard Voice Input if needed)';
+          document.getElementById('visualizerStatus').innerText = '🔴 Recording Audio (Type or speak via mobile keyboard)';
         }
 
         isRecording = true;
@@ -1024,7 +1024,11 @@
       document.getElementById('recordBtn').innerText = '🔴 Start Voice Recording';
       document.getElementById('visualizerStatus').innerText = '🎙️ Microphone Standby';
       stopSpectrumBars();
-      updateSaveBtnState();
+
+      // Buffer to allow audio Blob conversion to finish
+      setTimeout(() => {
+        updateSaveBtnState();
+      }, 300);
     }
 
     // ANIMATED SPECTRUM
