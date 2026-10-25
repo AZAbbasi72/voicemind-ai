@@ -137,7 +137,8 @@
         <button class="chipBtn" onclick="setTheme('mono')">Mono</button>
       </div>
 
-      <div class="dropdownHeader">Recording</div>
+      <div class="dropdownHeader">Transcription Method</div>
+      <div class="dropdownItem" onclick="toggleRecMode()" id="modeToggleText"></div>
       <div class="dropdownItem" onclick="toggleAudioSave()" id="audioSaveToggleText"></div>
 
       <div class="dropdownHeader">Spectrum Visualizer Style</div>
@@ -170,7 +171,8 @@
       <button id="recordBtn" class="primaryBtn btnRecord" onclick="toggleRecording()">🔴 Start Voice Recording</button>
 
       <label>Spoken Transcript / Text Note:</label>
-      <textarea id="spokenText" placeholder="Speak into microphone or type note..." oninput="onTextEdited()"></textarea>
+      <textarea id="spokenText" dir="auto" placeholder="Speak into microphone or type note..." oninput="onTextEdited()"></textarea>
+      <div style="font-size:11px; color:var(--subtext); flex-shrink:0;">💡 Tip: you can also tap the 🎤 on your phone keyboard to dictate straight into this box.</div>
 
       <button id="saveBtn" class="primaryBtn btnSave" onclick="handleSaveThought()" disabled>💾 Save & Translate</button>
     </div>
@@ -249,6 +251,11 @@
     let spectrumInterval = null;
     let wavePhase = 0;
     let statusNote = '';
+    let recMode = lsGet('vm_mode', 'whisper'); // 'whisper' (record, then AI transcribe) or 'live' (browser speech)
+    let lastBlob = null;
+    let transcriber = null;
+    let transcribing = false;
+    let lastMicError = null;
 
     const THEMES = {
       light:{bg:'#F8FAFC',card:'#FFFFFF',border:'#CBD5E1',text:'#0F172A',subtext:'#64748B',header:'#FFFFFF',nav:'#FFFFFF',inputBg:'#F1F5F9',primaryBtn:'#4F46E5',recordBtn:'#EF4444',saveBtn:'#10B981',dropdownBg:'#FFFFFF'},
@@ -278,6 +285,7 @@
       updateAnimStyleUI();
       updateSpectrumUI();
       updateAudioSaveUI();
+      updateModeUI();
     };
 
     // ---------- AUTH ----------
@@ -373,6 +381,18 @@
       $('audioSaveToggleText').innerText = saveAudio
         ? '🎧 Save Audio + Transcript (ON)'
         : '📝 Transcript Only (Audio saving OFF - most reliable)';
+    }
+
+    function toggleRecMode() {
+      if (isRecording || transcribing) return alertModal('Busy', 'Wait until recording/transcribing is finished.');
+      recMode = recMode === 'whisper' ? 'live' : 'whisper';
+      lsSet('vm_mode', recMode); updateModeUI();
+    }
+    function updateModeUI() {
+      $('modeToggleText').innerText = recMode === 'whisper'
+        ? '🧠 AI Transcribe after recording (works on all phones)'
+        : '⚡ Live browser speech (may fail on some phones)';
+      $('audioSaveToggleText').style.display = 'block';
     }
 
     // ---------- TABS ----------
@@ -473,10 +493,11 @@
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
           statusNote = ' (audio not saved - unsupported)';
-          return;
+          lastMicError = { name: 'Unsupported', message: 'This browser cannot record audio. Open the link in Chrome.' };
+          return false;
         }
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (!isRecording) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; return; }
+        if (!isRecording) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; return false; }
 
         let options = {};
         if (MediaRecorder.isTypeSupported) {
@@ -485,20 +506,83 @@
           else if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
         }
         audioChunks = [];
-        mediaRecorder = new MediaRecorder(mediaStream, options);
-        mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
-        mediaRecorder.onstop = () => {
-          if (!audioChunks.length) return;
-          const blob = new Blob(audioChunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
+        const rec = new MediaRecorder(mediaStream, options);
+        mediaRecorder = rec;
+        rec.ondataavailable = e => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+        rec.onstop = () => {
+          if (!audioChunks.length) { updateSaveBtnState(); return; }
+          const blob = new Blob(audioChunks, { type: rec.mimeType || 'audio/webm' });
+          lastBlob = blob;
           const reader = new FileReader();
           reader.onloadend = () => { audioBase64 = reader.result; updateSaveBtnState(); };
           reader.readAsDataURL(blob);
+          if (recMode === 'whisper') transcribeBlob(blob);
         };
-        mediaRecorder.start(250);
+        rec.start(250);
+        return true;
       } catch (err) {
-        console.log('Audio recorder skipped:', err);
+        console.log('Audio recorder failed:', err);
+        lastMicError = err;
         mediaRecorder = null; mediaStream = null;
         statusNote = ' (audio not saved)';
+        return false;
+      }
+    }
+
+    // ---------- OFFLINE WHISPER AI TRANSCRIPTION ----------
+    async function transcribeBlob(blob) {
+      transcribing = true; updateSaveBtnState();
+      try {
+        setStatus('⏳ Preparing audio...');
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Ctx({ sampleRate: 16000 });
+        const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+        let audio = buf.getChannelData(0);
+        if (buf.numberOfChannels > 1) {
+          const c1 = buf.getChannelData(1), m = new Float32Array(audio.length);
+          for (let i = 0; i < m.length; i++) m[i] = (audio[i] + c1[i]) / 2;
+          audio = m;
+        }
+        try { ctx.close(); } catch (e) {}
+
+        if (!transcriber) {
+          setStatus('⏳ Loading AI model (first time only, ~80 MB)...');
+          const mod = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
+          mod.env.allowLocalModels = false;
+          transcriber = await mod.pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+            dtype: 'q8',
+            device: 'wasm',
+            progress_callback: p => {
+              if (p && p.status === 'progress' && typeof p.progress === 'number') {
+                setStatus('⏳ Downloading AI model... ' + Math.round(p.progress) + '%');
+              }
+            }
+          });
+        }
+
+        setStatus('🧠 Transcribing... please wait');
+        const out = await transcriber(audio, {
+          language: selectedLang === 'Urdu' ? 'urdu' : 'english',
+          task: 'transcribe',
+          chunk_length_s: 30,
+          stride_length_s: 5
+        });
+        const text = ((out && out.text) || '').trim();
+        if (text) {
+          const base = $('spokenText').value.trim();
+          finalText = (base ? base + ' ' : '') + text;
+          updateTextbox('');
+          setStatus('✅ Transcript ready - edit if needed, then Save');
+        } else {
+          setStatus('⚠️ No speech detected. Speak closer to the mic and try again.');
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus('⚠️ Transcription failed');
+        alertModal('Transcription Failed', 'Details: ' + (err && err.message ? err.message : err) +
+          '\n\nThe first run needs internet to download the AI model. You can also tap the 🎤 on your keyboard to dictate, or type the note.');
+      } finally {
+        transcribing = false; updateSaveBtnState();
       }
     }
 
@@ -513,9 +597,10 @@
     }
 
     async function startRecording() {
+      if (transcribing) return;
       $('dropdownMenu').style.display = 'none';
-      finalText = $('spokenText').value.trim(); // append to whatever is already there
-      audioBase64 = null;
+      finalText = $('spokenText').value.trim();
+      audioBase64 = null; lastBlob = null; lastMicError = null;
       statusNote = '';
       isRecording = true;
 
@@ -525,10 +610,19 @@
       startSpectrumBars();
       updateSaveBtnState();
 
-      // 1) Speech recognition FIRST (it needs the mic before anything else grabs it)
-      startSpeechRecognition();
+      if (recMode === 'whisper') {
+        const ok = await startAudioRecorder();
+        if (ok) { setStatus('🔴 Recording... tap Stop when finished'); }
+        else {
+          stopRecording();
+          const d = lastMicError ? (lastMicError.name + ': ' + lastMicError.message) : 'Unknown error';
+          alertModal('Microphone Error', d + '\n\nAllow microphone access for this site in Chrome (lock icon next to the address), and open the link in Chrome, not inside another app.');
+        }
+        return;
+      }
 
-      // 2) Optional audio recording AFTER recognition has taken the mic
+      // Live mode: speech recognition first, then optional audio
+      startSpeechRecognition();
       if (saveAudio) {
         await new Promise(r => setTimeout(r, 700));
         if (isRecording) await startAudioRecorder();
@@ -580,7 +674,7 @@
 
     function updateSaveBtnState() {
       const text = $('spokenText').value.trim();
-      $('saveBtn').disabled = isRecording || !(audioBase64 || text.length > 0);
+      $('saveBtn').disabled = isRecording || transcribing || !(audioBase64 || text.length > 0);
     }
 
     function selectCategory(btn, cat) {
@@ -626,7 +720,7 @@
         originalLang: selectedLang,
         originalText: rawText,
         englishText: translated,
-        audioUri: audioBase64
+        audioUri: (recMode === 'whisper' && !saveAudio) ? null : audioBase64
       };
 
       entries.unshift(newEntry);
