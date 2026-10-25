@@ -352,6 +352,20 @@
       flex-shrink: 0;
     }
 
+    .secondaryBtn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--inputBg);
+      color: var(--text);
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
     .btnRecord { background: var(--primaryBtn); }
     .btnRecording { background: var(--recordBtn); }
     .btnSave { background: var(--saveBtn); }
@@ -534,7 +548,7 @@
     <div class="authCard">
       <h2>VoiceMind AI</h2>
       <div class="authSub">Enter your security passcode to unlock</div>
-      <input type="password" id="passcodeInput" placeholder="Enter Passcode (default: 1234)" style="margin-bottom: 14px;" />
+      <input type="password" id="passcodeInput" placeholder="Enter Passcode (default: 1234)" style="margin-bottom: 14px;" onkeydown="if(event.key==='Enter') handleLogin()" />
       <button class="primaryBtn btnRecord" onclick="handleLogin()">Unlock App</button>
     </div>
   </div>
@@ -575,10 +589,6 @@
         <button class="chipBtn" onclick="setTheme('violet')">Midnight</button>
         <button class="chipBtn" onclick="setTheme('mono')">Mono</button>
       </div>
-
-      <div class="dropdownHeader">Spectrum Visualizer Style</div>
-      <div class="dropdownItem" onclick="toggleAnimStyle()" id="animStyleToggleText">🌊 Audio Waveform Mode</div>
-      <div class="dropdownItem" onclick="toggleSpectrumMode()" id="spectrumToggleText">🌈 Multi-Color Bars</div>
 
       <div class="dropdownHeader">Security</div>
       <div class="dropdownItem" onclick="openPasscodeModal()">🔑 Change Passcode</div>
@@ -691,7 +701,14 @@
     let sortNewestFirst = true;
     let selectedCatFilter = 'All';
     let selectedDateFilter = 'All Dates';
-    let passcode = localStorage.getItem('voicemind_pass') || '1234';
+
+    // Robust passcode recovery & default fallback
+    let passcode = localStorage.getItem('voicemind_pass');
+    if (!passcode) {
+      passcode = '1234';
+      localStorage.setItem('voicemind_pass', '1234');
+    }
+
     let notes = JSON.parse(localStorage.getItem('voicemind_notes') || '[]');
 
     // Web Speech API Variables
@@ -727,11 +744,11 @@
     }
 
     function handleLogin() {
-      const val = document.getElementById('passcodeInput').value;
+      const val = document.getElementById('passcodeInput').value.trim();
       if (val === passcode) {
         document.getElementById('authScreen').style.display = 'none';
       } else {
-        alert('Incorrect passcode! Default is 1234.');
+        alert('Incorrect passcode! Default passcode is 1234.');
       }
     }
 
@@ -876,7 +893,6 @@
       const rawText = document.getElementById('spokenText').value.trim();
       if (!rawText) return;
 
-      // Mock Translation / Processing
       let translatedText = rawText;
       if (currentLang === 'Urdu') {
         translatedText = "[Translated to English]: " + rawText;
@@ -996,4 +1012,49 @@
           const ideas = notes.filter(n => n.category === 'Idea');
           answer += `You have ${ideas.length} recorded idea repositories.`;
         } else {
-          answer += `You currently have a total of ${notes.length} notes stored across categories: Idea, Memory, Work
+          answer += `You currently have a total of ${notes.length} notes stored across categories: Idea, Memory, Work, Assignment, and Personal.`;
+        }
+
+        chatList.innerHTML += `<div class="chatBubble chatBot">${answer}</div>`;
+        chatList.scrollTop = chatList.scrollHeight;
+      }, 500);
+    }
+
+    // MODAL & SECURITY SETTINGS
+    function openPasscodeModal() {
+      toggleMenu();
+      const overlay = document.getElementById('modalOverlay');
+      document.getElementById('modalTitle').innerText = "Change Passcode";
+      document.getElementById('modalBody').innerText = "Enter your new 4-digit security passcode:";
+      document.getElementById('modalContentArea').innerHTML = `<input type="password" id="newPassInput" placeholder="New passcode" />`;
+      document.getElementById('modalActions').innerHTML = `
+        <button class="secondaryBtn" onclick="closeModal()">Cancel</button>
+        <button class="primaryBtn btnSave" onclick="saveNewPasscode()">Save</button>
+      `;
+      overlay.style.display = 'flex';
+    }
+
+    function saveNewPasscode() {
+      const p = document.getElementById('newPassInput').value.trim();
+      if (p.length > 0) {
+        passcode = p;
+        localStorage.setItem('voicemind_pass', p);
+        alert('Passcode updated successfully!');
+        closeModal();
+      } else {
+        alert('Please enter a valid passcode.');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    function logout() {
+      toggleMenu();
+      document.getElementById('passcodeInput').value = '';
+      document.getElementById('authScreen').style.display = 'flex';
+    }
+  </script>
+</body>
+</html>
