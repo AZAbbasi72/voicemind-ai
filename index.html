@@ -3,915 +3,416 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VoiceMind AI</title>
+  <title>VoiceMind AI Studio</title>
   <style>
-    html, body {
-      height: 100%;
-      height: 100dvh;
-      overflow: hidden;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      box-sizing: border-box;
-    }
-
-    *, *:before, *:after {
-      box-sizing: inherit;
-    }
-
-    body {
-      display: flex;
-      flex-direction: column;
-    }
-
     :root {
-      --bg: #F8FAFC;
-      --card: #FFFFFF;
-      --border: #CBD5E1;
-      --text: #0F172A;
-      --subtext: #64748B;
-      --header: #FFFFFF;
-      --nav: #FFFFFF;
-      --inputBg: #F1F5F9;
-      --primaryBtn: #4F46E5;
-      --recordBtn: #EF4444;
-      --saveBtn: #10B981;
-      --dropdownBg: #FFFFFF;
+      --bg: #0F172A;
+      --card: #1E293B;
+      --border: #334155;
+      --text: #F8FAFC;
+      --subtext: #94A3B8;
+      --primary: #6366F1;
+      --record: #EF4444;
+      --save: #10B981;
     }
 
-    #authScreen {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      padding: 20px;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    html, body { height: 100%; height: 100dvh; background: var(--bg); color: var(--text); overflow: hidden; display: flex; flex-direction: column; }
 
-    .authCard {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 28px 24px;
-      width: 100%;
-      max-width: 340px;
-      text-align: center;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    /* AUTH LOCK OVERLAY */
+    #authOverlay {
+      position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+      display: flex; justify-content: center; align-items: center; padding: 20px;
     }
-
-    .authCard h2 {
-      margin-bottom: 8px;
-      font-size: 22px;
-      color: var(--text);
+    .authBox {
+      background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 30px; width: 100%; max-width: 320px; text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
-
-    .authSub {
-      font-size: 12px;
-      color: var(--subtext);
-      margin-bottom: 20px;
+    .authBox h2 { margin-bottom: 6px; font-size: 20px; }
+    .authBox p { font-size: 12px; color: var(--subtext); margin-bottom: 20px; }
+    .inputField {
+      width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px; font-size: 14px; outline: none; margin-bottom: 12px; text-align: center;
     }
-
-    #modalOverlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      padding: 20px;
+    .btn {
+      width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; font-size: 14px; cursor: pointer; color: #FFF;
     }
+    .btnPrimary { background: var(--primary); }
+    .btnRecord { background: var(--record); }
+    .btnSave { background: var(--save); }
 
-    .modalCard {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
-      width: 100%;
-      max-width: 320px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    }
-
-    .modalTitle {
-      font-size: 17px;
-      font-weight: bold;
-      color: var(--text);
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    .modalBody {
-      font-size: 13px;
-      color: var(--subtext);
-      margin-bottom: 14px;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      text-align: center;
-    }
-
-    .modalActions {
-      display: flex;
-      flex-direction: row;
-      gap: 10px;
-      margin-top: 14px;
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    .modalActions button {
-      flex: 1 1 0% !important;
-      width: auto !important;
-      min-width: 0 !important;
-      padding: 10px 4px !important;
-      font-size: 13px !important;
-      margin: 0 !important;
-    }
-
+    /* HEADER */
     header {
-      background: var(--header);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      position: relative;
-      z-index: 100;
-      flex-shrink: 0;
+      background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 16px;
+      display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
     }
+    .headerTitle { font-size: 16px; font-weight: bold; }
+    .headerActions { display: flex; gap: 8px; align-items: center; }
+    .pillBadge { font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; color: var(--subtext); cursor: pointer; }
 
-    .headerTitle {
-      font-size: 18px;
-      font-weight: bold;
+    /* MAIN CONTAINER */
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .tabPane { display: none; flex: 1; flex-direction: column; overflow-y: auto; padding: 16px; gap: 12px; }
+    .tabPane.active { display: flex; }
+
+    /* RECORDING TAB */
+    .visualizer {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; text-align: center;
     }
+    .bars { display: flex; justify-content: center; align-items: center; height: 50px; gap: 4px; margin-bottom: 8px; }
+    .bar { width: 4px; height: 6px; background: var(--border); border-radius: 2px; transition: height 0.1s ease; }
+    .statusText { font-size: 12px; color: var(--subtext); font-weight: 600; }
 
-    .menuBtn {
-      background: none;
-      border: none;
-      color: var(--primaryBtn);
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    #dropdownMenu {
-      display: none;
-      position: absolute;
-      top: 52px;
-      right: 12px;
-      width: 270px;
-      background: var(--dropdownBg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-      z-index: 1000;
-    }
-
-    .dropdownHeader {
-      font-size: 10px;
-      font-weight: bold;
-      color: var(--subtext);
-      margin-top: 10px;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .dropdownRow {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .chipBtn {
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      font-size: 11px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .chipBtn.active {
-      background: var(--primaryBtn);
-      color: #FFFFFF;
-      border-color: var(--primaryBtn);
-    }
-
-    .dropdownItem {
-      padding: 10px 0;
-      color: var(--text);
-      font-size: 13px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--inputBg);
-    }
-
-    main {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .tabContent {
-      display: none;
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 12px 16px;
-    }
-
-    .tabContent.active {
-      display: flex;
-      flex-direction: column;
-    }
-
-    #recordTab {
-      height: 100%;
-      display: none;
-      flex-direction: column;
-      padding: 12px 14px;
-      gap: 6px;
-    }
-
-    #recordTab.active {
-      display: flex;
-    }
-
-    label {
-      font-size: 12px;
-      color: var(--subtext);
-      font-weight: 600;
-      display: block;
-      margin-top: 2px;
-      margin-bottom: 2px;
-    }
-
-    .horizontalScroll {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .horizontalScroll::-webkit-scrollbar {
-      display: none;
-    }
-
+    .scrollPills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-shrink: 0; }
+    .scrollPills::-webkit-scrollbar { display: none; }
     .catPill {
-      padding: 6px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      flex-shrink: 0;
+      padding: 6px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card);
+      color: var(--subtext); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    .catPill.active { background: var(--save); color: #FFF; border-color: var(--save); }
+
+    textarea {
+      width: 100%; flex: 1; min-height: 120px; background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 12px; padding: 12px; font-size: 14px; outline: none; resize: none; line-height: 1.4;
     }
 
-    .catPill.active {
-      background: var(--saveBtn);
-      color: #FFFFFF;
-      border-color: var(--saveBtn);
+    /* REPOSITORY LIST */
+    .repoCard {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px;
     }
+    .repoHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .repoTag { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 6px; background: #312E81; color: #C7D2FE; }
+    .repoDate { font-size: 10px; color: var(--subtext); }
+    .repoText { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 6px; }
+    .repoOriginal { font-size: 12px; color: var(--subtext); font-style: italic; display: none; }
+    .toggleLink { font-size: 11px; color: var(--primary); cursor: pointer; font-weight: bold; }
 
-    .visualizerContainer {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px;
-      text-align: center;
-      margin: 4px 0;
-      flex-shrink: 0;
-    }
+    /* CHATBOT TAB */
+    #chatList { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4; }
+    .bubbleUser { background: var(--primary); color: #FFF; margin-left: auto; }
+    .bubbleBot { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+    .chatInputRow { display: flex; gap: 8px; margin-top: 8px; flex-shrink: 0; }
 
-    .barsRow {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 75px;
-      gap: 3px;
-    }
-
-    .spectrumBar {
-      width: 4px;
-      height: 4px;
-      border-radius: 4px;
-      background-color: var(--border);
-      transition: height 0.08s ease-out, background-color 0.2s;
-    }
-
-    .visualizerStatus {
-      font-size: 12px;
-      color: var(--subtext);
-      margin-top: 8px;
-      font-weight: 600;
-    }
-
-    .primaryBtn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: none;
-      color: #FFFFFF;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .secondaryBtn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--inputBg);
-      color: var(--text);
-      font-weight: bold;
-      font-size: 13px;
-      cursor: pointer;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .btnRecord { background: var(--primaryBtn); }
-    .btnRecording { background: var(--recordBtn); }
-    .btnSave { background: var(--saveBtn); }
-
-    .btnSave:disabled {
-      background: var(--border) !important;
-      opacity: 0.5 !important;
-      color: var(--subtext) !important;
-      cursor: not-allowed;
-    }
-
-    textarea, input[type="text"], input[type="password"] {
-      width: 100%;
-      background: var(--inputBg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    textarea#spokenText {
-      resize: none;
-      flex: 1;
-      min-height: 90px;
-      line-height: 1.4;
-    }
-
-    #saveBtn {
-      margin-top: 4px;
-      margin-bottom: 2px;
-      padding: 13px;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-
-    .cardHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .badge {
-      padding: 3px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: bold;
-      border: 1px solid transparent;
-    }
-
-    .badge-Idea { background: #FEF3C7; color: #D97706; border-color: #FDE68A; }
-    .badge-Assignment { background: #EDE9FE; color: #7C3AED; border-color: #DDD6FE; }
-    .badge-Work { background: #E0F2FE; color: #0284C7; border-color: #BAE6FD; }
-    .badge-Memory { background: #FCE7F3; color: #DB2777; border-color: #FBCFE8; }
-    .badge-Personal { background: #D1FAE5; color: #059669; border-color: #A7F3D0; }
-
-    .dateText {
-      font-size: 11px;
-      color: var(--subtext);
-    }
-
-    .englishText {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
-
-    .toggleText {
-      font-size: 12px;
-      color: var(--primaryBtn);
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 6px;
-    }
-
-    .originalText {
-      font-size: 13px;
-      font-style: italic;
-      color: var(--subtext);
-      margin-top: 6px;
-      display: none;
-    }
-
-    #chatTab {
-      display: none;
-      flex-direction: column;
-      height: 100%;
-      padding: 0;
-    }
-
-    #chatTab.active {
-      display: flex;
-    }
-
-    #chatList {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-
-    .chatBubble {
-      padding: 10px 14px;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      max-width: 85%;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    .chatUser {
-      background: var(--primaryBtn);
-      color: #FFFFFF;
-      margin-left: auto;
-    }
-
-    .chatBot {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    .chatInputRow {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      background: var(--header);
-      flex-shrink: 0;
-    }
-
+    /* BOTTOM NAVBAR */
     nav {
-      background: var(--nav);
-      border-top: 1px solid var(--border);
-      display: flex;
-      height: 60px;
-      flex-shrink: 0;
-      z-index: 500;
+      background: var(--card); border-top: 1px solid var(--border); display: flex; height: 60px; flex-shrink: 0;
     }
-
     .navItem {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--subtext);
-      font-size: 11px;
-      cursor: pointer;
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: var(--subtext); font-size: 11px; cursor: pointer; gap: 2px;
     }
-
-    .navItem.active {
-      color: var(--primaryBtn);
-      font-weight: bold;
-    }
-
-    .navIcon {
-      font-size: 18px;
-      margin-bottom: 2px;
-    }
+    .navItem.active { color: var(--primary); font-weight: bold; }
+    .navIcon { font-size: 18px; }
   </style>
 </head>
 <body>
 
   <!-- AUTH LOCK SCREEN -->
-  <div id="authScreen">
-    <div class="authCard">
+  <div id="authOverlay">
+    <div class="authBox">
       <h2>VoiceMind AI</h2>
-      <div class="authSub">Enter your security passcode to unlock</div>
-      <input type="password" id="passcodeInput" placeholder="Passcode: 1234" style="margin-bottom: 14px;" onkeydown="if(event.key==='Enter') handleLogin()" />
-      <button class="primaryBtn btnRecord" onclick="handleLogin()">Unlock App</button>
-    </div>
-  </div>
-
-  <!-- MODAL OVERLAY -->
-  <div id="modalOverlay">
-    <div class="modalCard">
-      <div class="modalTitle" id="modalTitle">Select Category</div>
-      <div class="modalBody" id="modalBody">Choose repository category for your note:</div>
-      <div id="modalContentArea" style="margin-bottom: 10px;"></div>
-      <div class="modalActions" id="modalActions">
-        <button class="secondaryBtn" onclick="closeModal()">Cancel</button>
-      </div>
+      <p>Enter security passcode (Default: 1234)</p>
+      <input type="password" id="passInput" class="inputField" placeholder="PIN Code" onkeydown="if(event.key==='Enter') verifyPass()" />
+      <button class="btn btnPrimary" onclick="verifyPass()">Unlock App</button>
     </div>
   </div>
 
   <!-- HEADER -->
   <header>
-    <div class="headerTitle" id="appHeaderTitle">🎙️ Record & Translate</div>
-    <button class="menuBtn" onclick="toggleMenu()">⚙️ Menu</button>
-
-    <div id="dropdownMenu">
-      <div class="dropdownHeader">Translation Language</div>
-      <div class="dropdownRow">
-        <button class="chipBtn active" id="langUrdu" onclick="setLanguage('Urdu')">Urdu (اردو)</button>
-        <button class="chipBtn" id="langEng" onclick="setLanguage('English')">English</button>
-      </div>
-
-      <div class="dropdownHeader">Theme Select</div>
-      <div class="dropdownRow">
-        <button class="chipBtn" onclick="setTheme('light')">Light</button>
-        <button class="chipBtn" onclick="setTheme('dark')">Dark Slate</button>
-        <button class="chipBtn" onclick="setTheme('emerald')">Emerald</button>
-        <button class="chipBtn" onclick="setTheme('cyberpunk')">Cyberpunk</button>
-        <button class="chipBtn" onclick="setTheme('ocean')">Ocean</button>
-        <button class="chipBtn" onclick="setTheme('sunset')">Sunset</button>
-        <button class="chipBtn" onclick="setTheme('violet')">Midnight</button>
-        <button class="chipBtn" onclick="setTheme('mono')">Mono</button>
-      </div>
-
-      <div class="dropdownHeader">Visualizer Options</div>
-      <div class="dropdownItem" onclick="toggleSpectrumMode()" id="spectrumToggleText">🌈 Multi-Color Bars (OFF)</div>
-
-      <div class="dropdownHeader">Security</div>
-      <div class="dropdownItem" onclick="openPasscodeModal()">🔑 Change Passcode</div>
-      <div class="dropdownItem" style="color: var(--recordBtn); font-weight: bold;" onclick="logout()">🚪 Logout System</div>
+    <div class="headerTitle" id="headerTitle">🎙️ Voice & Translation</div>
+    <div class="headerActions">
+      <span class="pillBadge" id="langBadge" onclick="toggleLanguage()">Urdu (اردو)</span>
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
+  <!-- MAIN APP WINDOW -->
   <main>
     <!-- TAB 1: RECORD & TRANSLATE -->
-    <div id="recordTab" class="tabContent active">
-      <label>Select Category Tag:</label>
-      <div class="horizontalScroll" id="categorySelectionScroll">
-        <button class="catPill active" onclick="selectActiveCategory(this, 'Idea')">Idea</button>
-        <button class="catPill" onclick="selectActiveCategory(this, 'Memory')">Memory</button>
-        <button class="catPill" onclick="selectActiveCategory(this, 'Work')">Work</button>
-        <button class="catPill" onclick="selectActiveCategory(this, 'Assignment')">Assignment</button>
-        <button class="catPill" onclick="selectActiveCategory(this, 'Personal')">Personal</button>
+    <div id="tabRecord" class="tabPane active">
+      <label style="font-size: 11px; color: var(--subtext); font-weight: bold;">SELECT CATEGORY:</label>
+      <div class="scrollPills" id="categoryScroll">
+        <div class="catPill active" onclick="selectCat(this, 'Idea')">Idea</div>
+        <div class="catPill" onclick="selectCat(this, 'Work')">Work</div>
+        <div class="catPill" onclick="selectCat(this, 'Assignment')">Assignment</div>
+        <div class="catPill" onclick="selectCat(this, 'Memory')">Memory</div>
+        <div class="catPill" onclick="selectCat(this, 'Personal')">Personal</div>
       </div>
 
-      <div class="visualizerContainer">
-        <div class="barsRow" id="barsRow">
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
-          <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
+      <div class="visualizer">
+        <div class="bars" id="barsContainer">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
         </div>
-        <div class="visualizerStatus" id="visualizerStatus">🎙️ Microphone Standby</div>
+        <div class="statusText" id="statusText">🎙️ Standby. Tap below to speak.</div>
       </div>
 
-      <button id="recordBtn" class="primaryBtn btnRecord" onclick="toggleRecording()">🔴 Start Voice Recording</button>
+      <button id="recBtn" class="btn btnRecord" onclick="toggleRecording()">🔴 Start Voice Recording</button>
 
-      <label>Spoken Transcript / Text Note:</label>
-      <textarea id="spokenText" placeholder="Speak into microphone or type note..." oninput="updateSaveBtnState()"></textarea>
+      <textarea id="transcriptBox" placeholder="Spoken Urdu audio transcript will appear here live..." oninput="checkSaveState()"></textarea>
 
-      <button id="saveBtn" class="primaryBtn btnSave" onclick="handleSaveThought()" disabled>
-        💾 Save & Translate
-      </button>
+      <button id="saveBtn" class="btn btnSave" onclick="saveThought()" disabled>💾 Save to Repository</button>
     </div>
 
-    <!-- TAB 2: REPOSITORY -->
-    <div id="repositoryTab" class="tabContent">
-      <label>📁 Category Wise:</label>
-      <div class="horizontalScroll">
-        <button class="catPill active" onclick="filterCategory(this, 'All')">All</button>
-        <button class="catPill" onclick="filterCategory(this, 'Idea')">Idea</button>
-        <button class="catPill" onclick="filterCategory(this, 'Memory')">Memory</button>
-        <button class="catPill" onclick="filterCategory(this, 'Work')">Work</button>
-        <button class="catPill" onclick="filterCategory(this, 'Assignment')">Assignment</button>
-        <button class="catPill" onclick="filterCategory(this, 'Personal')">Personal</button>
+    <!-- TAB 2: REPOSITORIES -->
+    <div id="tabRepo" class="tabPane">
+      <div class="scrollPills">
+        <div class="catPill active" onclick="filterRepo(this, 'All')">All Categories</div>
+        <div class="catPill" onclick="filterRepo(this, 'Idea')">Idea</div>
+        <div class="catPill" onclick="filterRepo(this, 'Work')">Work</div>
+        <div class="catPill" onclick="filterRepo(this, 'Assignment')">Assignment</div>
+        <div class="catPill" onclick="filterRepo(this, 'Memory')">Memory</div>
+        <div class="catPill" onclick="filterRepo(this, 'Personal')">Personal</div>
       </div>
-
-      <label style="margin-top: 4px;">📅 Date Wise:</label>
-      <div class="horizontalScroll">
-        <button class="catPill active" onclick="filterDate(this, 'All Dates')">All Dates</button>
-        <button class="catPill" onclick="filterDate(this, 'Today')">Today</button>
-        <button class="catPill" onclick="filterDate(this, 'Past 7 Days')">Past 7 Days</button>
-        <button class="catPill" onclick="filterDate(this, 'Past 30 Days')">Past 30 Days</button>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
-        <span id="noteCounter" style="font-size: 12px; color: var(--subtext);">Showing 0 notes</span>
-        <button class="chipBtn" onclick="toggleSortOrder()" id="sortBtn">⏱️ Newest First</button>
-      </div>
-
-      <div id="entriesList"></div>
+      <div id="repoList" style="flex: 1; overflow-y: auto;"></div>
     </div>
 
-    <!-- TAB 3: ASSISTANT -->
-    <div id="chatTab" class="tabContent">
+    <!-- TAB 3: AI ASSISTANT -->
+    <div id="tabChat" class="tabPane">
       <div id="chatList">
-        <div class="chatBubble chatBot">
-          Hello! I am your VoiceMind AI assistant. Ask me anything about your recorded thoughts or assignments.
-        </div>
+        <div class="bubble bubbleBot">Hello! I am your VoiceMind Assistant. Ask me anything about your saved notes or tasks.</div>
       </div>
       <div class="chatInputRow">
-        <input type="text" id="chatInput" placeholder="Ask e.g. 'What assignments do I have?'" onkeydown="if(event.key==='Enter') handleSendMessage()" />
-        <button class="primaryBtn btnSave" style="width: auto; padding: 10px 18px;" onclick="handleSendMessage()">Send</button>
+        <input type="text" id="chatInput" class="inputField" placeholder="Ask e.g. 'What ideas did I save?'" style="margin:0;" onkeydown="if(event.key==='Enter') sendChat()" />
+        <button class="btn btnPrimary" style="width: auto; padding: 0 16px;" onclick="sendChat()">Send</button>
       </div>
     </div>
   </main>
 
   <!-- NAVIGATION BAR -->
   <nav>
-    <div class="navItem active" onclick="switchTab('recordTab', this)">
-      <div class="navIcon">🎙️</div>
+    <div class="navItem active" onclick="switchTab('tabRecord', this)">
+      <span class="navIcon">🎙️</span>
       <span>Record</span>
     </div>
-    <div class="navItem" onclick="switchTab('repositoryTab', this)">
-      <div class="navIcon">📂</div>
+    <div class="navItem" onclick="switchTab('tabRepo', this)">
+      <span class="navIcon">📂</span>
       <span>Repository</span>
     </div>
-    <div class="navItem" onclick="switchTab('chatTab', this)">
-      <div class="navIcon">🤖</div>
-      <span>AI Chat</span>
+    <div class="navItem" onclick="switchTab('tabChat', this)">
+      <span class="navIcon">🤖</span>
+      <span>AI Assistant</span>
     </div>
   </nav>
 
-  <!-- SCRIPT LOGIC -->
+  <!-- JAVASCRIPT CONTROLLER -->
   <script>
-    let currentTabId = 'recordTab';
-    let currentTheme = 'light';
-    let currentLang = 'Urdu';
     let activeCategory = 'Idea';
-    let sortNewestFirst = true;
-    let selectedCatFilter = 'All';
-    let selectedDateFilter = 'All Dates';
-
-    // GUARANTEED PASSCODE FALLBACK (forces 1234 if unconfigured/corrupted)
-    let passcode = localStorage.getItem('voicemind_pass');
-    if (!passcode || passcode.trim() === '') {
-      passcode = '1234';
-      localStorage.setItem('voicemind_pass', '1234');
-    }
-
-    let notes = JSON.parse(localStorage.getItem('voicemind_notes') || '[]');
-
-    let recognition = null;
+    let currentLang = 'Urdu';
     let isRecording = false;
-    let visualizerTimer = null;
-    let multiColorMode = false;
+    let recognition = null;
+    let animInterval = null;
+    let activeRepoFilter = 'All';
 
-    const themes = {
-      light: { bg: '#F8FAFC', card: '#FFFFFF', border: '#CBD5E1', text: '#0F172A', subtext: '#64748B', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#F1F5F9', primaryBtn: '#4F46E5', recordBtn: '#EF4444', saveBtn: '#10B981', dropdownBg: '#FFFFFF' },
-      dark: { bg: '#0F0F1A', card: '#1A1A2E', border: '#333355', text: '#F8FAFC', subtext: '#94A3B8', header: '#1A1A2E', nav: '#1A1A2E', inputBg: '#121222', primaryBtn: '#6366F1', recordBtn: '#F43F5E', saveBtn: '#10B981', dropdownBg: '#1A1A2E' },
-      emerald: { bg: '#F0FDF4', card: '#FFFFFF', border: '#A7F3D0', text: '#064E3B', subtext: '#047857', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#ECFDF5', primaryBtn: '#059669', recordBtn: '#DC2626', saveBtn: '#059669', dropdownBg: '#FFFFFF' },
-      cyberpunk: { bg: '#0F051D', card: '#1A0B2E', border: '#9333EA', text: '#F3E8FF', subtext: '#C084FC', header: '#1A0B2E', nav: '#1A0B2E', inputBg: '#120720', primaryBtn: '#A855F7', recordBtn: '#EC4899', saveBtn: '#06B6D4', dropdownBg: '#1A0B2E' },
-      ocean: { bg: '#F0F9FF', card: '#FFFFFF', border: '#BAE6FD', text: '#0C4A6E', subtext: '#0284C7', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#E0F2FE', primaryBtn: '#0284C7', recordBtn: '#E11D48', saveBtn: '#0EA5E9', dropdownBg: '#FFFFFF' },
-      sunset: { bg: '#FFF7ED', card: '#FFFFFF', border: '#FED7AA', text: '#7C2D12', subtext: '#C2410C', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#FFEDD5', primaryBtn: '#EA580C', recordBtn: '#E11D48', saveBtn: '#F97316', dropdownBg: '#FFFFFF' },
-      violet: { bg: '#F5F3FF', card: '#FFFFFF', border: '#DDD6FE', text: '#3B0764', subtext: '#7C3AED', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#EDE9FE', primaryBtn: '#7C3AED', recordBtn: '#E11D48', saveBtn: '#8B5CF6', dropdownBg: '#FFFFFF' },
-      mono: { bg: '#FAFAFA', card: '#FFFFFF', border: '#E5E5E5', text: '#171717', subtext: '#737373', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#F5F5F5', primaryBtn: '#262626', recordBtn: '#737373', saveBtn: '#171717', dropdownBg: '#FFFFFF' }
-    };
+    let notes = JSON.parse(localStorage.getItem('vm_notes') || '[]');
 
-    function applyTheme(themeName) {
-      currentTheme = themeName;
-      const t = themes[themeName];
-      if (!t) return;
-      const root = document.documentElement;
-      for (let key in t) {
-        root.style.setProperty('--' + key, t[key]);
-      }
-    }
-
-    function setTheme(name) {
-      applyTheme(name);
-      toggleMenu();
-    }
-
-    function handleLogin() {
-      const val = document.getElementById('passcodeInput').value.trim();
-      if (val === passcode) {
-        document.getElementById('authScreen').style.display = 'none';
+    function verifyPass() {
+      const pin = document.getElementById('passInput').value.trim();
+      if (pin === '1234') {
+        document.getElementById('authOverlay').style.display = 'none';
       } else {
-        alert('Incorrect passcode! Default passcode is 1234.');
+        alert('Incorrect PIN code. Default is 1234.');
       }
-    }
-
-    function toggleMenu() {
-      const m = document.getElementById('dropdownMenu');
-      m.style.display = (m.style.display === 'block') ? 'none' : 'block';
     }
 
     function switchTab(tabId, el) {
-      document.querySelectorAll('.tabContent').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tabPane').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.navItem').forEach(n => n.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       el.classList.add('active');
-      currentTabId = tabId;
 
-      const titleMap = {
-        'recordTab': '🎙️ Record & Translate',
-        'repositoryTab': '📁 Repository Notes',
-        'chatTab': '🤖 AI Assistant'
-      };
-      document.getElementById('appHeaderTitle').innerText = titleMap[tabId] || 'VoiceMind AI';
-      document.getElementById('dropdownMenu').style.display = 'none';
+      const titles = { 'tabRecord': '🎙️ Voice & Translation', 'tabRepo': '📂 Stored Repositories', 'tabChat': '🤖 AI Assistant' };
+      document.getElementById('headerTitle').innerText = titles[tabId];
 
-      if (tabId === 'repositoryTab') {
-        renderRepository();
-      }
+      if (tabId === 'tabRepo') renderRepo();
     }
 
-    function selectActiveCategory(btn, cat) {
-      document.querySelectorAll('#categorySelectionScroll .catPill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
+    function selectCat(el, cat) {
+      document.querySelectorAll('#categoryScroll .catPill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
       activeCategory = cat;
     }
 
-    function setLanguage(lang) {
-      currentLang = lang;
-      document.getElementById('langUrdu').classList.toggle('active', lang === 'Urdu');
-      document.getElementById('langEng').classList.toggle('active', lang === 'English');
-      toggleMenu();
+    function toggleLanguage() {
+      currentLang = (currentLang === 'Urdu') ? 'English' : 'Urdu';
+      document.getElementById('langBadge').innerText = (currentLang === 'Urdu') ? 'Urdu (اردو)' : 'English (US)';
+      if (isRecording) { toggleRecording(); toggleRecording(); }
     }
 
-    function updateSaveBtnState() {
-      const text = document.getElementById('spokenText').value.trim();
-      document.getElementById('saveBtn').disabled = (text.length === 0);
+    function checkSaveState() {
+      const txt = document.getElementById('transcriptBox').value.trim();
+      document.getElementById('saveBtn').disabled = (txt.length === 0);
     }
 
-    function toggleSpectrumMode() {
-      multiColorMode = !multiColorMode;
-      document.getElementById('spectrumToggleText').innerText = multiColorMode ? "🌈 Multi-Color Bars (ON)" : "🌈 Multi-Color Bars (OFF)";
-      toggleMenu();
-    }
-
-    // WEB SPEECH API INITIALIZATION
-    function initSpeechRecognition() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech recognition is not supported in this browser or Android WebView. Please open in Google Chrome.");
-        return null;
-      }
-
-      const rec = new SpeechRecognition();
-      rec.lang = (currentLang === 'Urdu') ? 'ur-PK' : 'en-US';
-      rec.interimResults = true;
-      rec.continuous = true;
-
-      rec.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        document.getElementById('spokenText').value = transcript;
-        updateSaveBtnState();
-      };
-
-      rec.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-        document.getElementById('visualizerStatus').innerText = "🎙️ Error: " + event.error;
-      };
-
-      rec.onend = () => {
-        if (isRecording) {
-          try { rec.start(); } catch(e) {}
-        }
-      };
-
-      return rec;
-    }
-
+    // WEB SPEECH RECOGNITION API
     function toggleRecording() {
-      const recordBtn = document.getElementById('recordBtn');
-      const statusEl = document.getElementById('visualizerStatus');
+      const btn = document.getElementById('recBtn');
+      const status = document.getElementById('statusText');
 
       if (!isRecording) {
-        if (!recognition) {
-          recognition = initSpeechRecognition();
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          alert('Web Speech API is not supported in this environment. Please open in Google Chrome on Android.');
+          return;
         }
-        if (recognition) {
-          try {
-            recognition.lang = (currentLang === 'Urdu') ? 'ur-PK' : 'en-US';
-            recognition.start();
-            isRecording = true;
-            recordBtn.innerText = "⏹️ Stop Recording";
-            recordBtn.classList.remove('btnRecord');
-            recordBtn.classList.add('btnRecording');
-            statusEl.innerText = "🔴 Live Voice Recording & Transcribing...";
-            startVisualizerAnimation();
-          } catch (e) {
-            console.error(e);
+
+        recognition = new SpeechRec();
+        recognition.lang = (currentLang === 'Urdu') ? 'ur-PK' : 'en-US';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event) => {
+          let fullTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript;
           }
+          document.getElementById('transcriptBox').value = fullTranscript;
+          checkSaveState();
+        };
+
+        recognition.onerror = (e) => {
+          status.innerText = "🎙️ Error: " + e.error;
+        };
+
+        recognition.onend = () => {
+          if (isRecording) { try { recognition.start(); } catch(err) {} }
+        };
+
+        try {
+          recognition.start();
+          isRecording = true;
+          btn.innerText = "⏹️ Stop Recording";
+          btn.classList.remove('btnRecord');
+          btn.classList.add('btnPrimary');
+          status.innerText = "🔴 Listening & Transcribing Live...";
+          startWaveform();
+        } catch(err) {
+          console.error(err);
         }
       } else {
-        if (recognition) {
-          recognition.stop();
-        }
         isRecording = false;
-        recordBtn.innerText = "🔴 Start Voice Recording";
-        recordBtn.classList.remove('btnRecording');
-        recordBtn.classList.add('btnRecord');
-        statusEl.innerText = "🎙️ Microphone Standby";
-        stopVisualizerAnimation();
+        if (recognition) recognition.stop();
+        btn.innerText = "🔴 Start Voice Recording";
+        btn.classList.remove('btnPrimary');
+        btn.classList.add('btnRecord');
+        status.innerText = "🎙️ Standby. Tap below to speak.";
+        stopWaveform();
       }
     }
 
-    function startVisualizerAnimation() {
-      const bars = document.querySelectorAll('.spectrumBar');
-      const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
-      visualizerTimer = setInterval(() => {
-        bars.forEach((bar, idx) => {
-          const height = Math.floor(Math.random() * 55) + 6;
-          bar.style.height = height + 'px';
-          bar.style.backgroundColor = multiColorMode ? colors[idx % colors.length] : themes[currentTheme].primaryBtn;
+    function startWaveform() {
+      const bars = document.querySelectorAll('.bar');
+      animInterval = setInterval(() => {
+        bars.forEach(bar => {
+          bar.style.height = (Math.floor(Math.random() * 35) + 6) + 'px';
+          bar.style.background = 'var(--save)';
         });
       }, 100);
     }
 
-    function stopVisualizerAnimation() {
-      clearInterval(visualizerTimer);
-      const bars = document.querySelectorAll('.spectrumBar');
-      bars.forEach(bar => {
-        bar.style.height = '4px';
-        bar.style.backgroundColor = themes[currentTheme].border;
+    function stopWaveform() {
+      clearInterval(animInterval);
+      document.querySelectorAll('.bar').forEach(bar => {
+        bar.style.height = '6px';
+        bar.style.background = 'var(--border)';
       });
     }
 
-    function handleSaveThought() {
-      if (isRecording) {
-        toggleRecording();
-      }
-      const rawText = document.getElementById('spokenText').value.trim();
-      if (!rawText) return;
+    function saveThought() {
+      if (isRecording) toggleRecording();
+      const txt = document.getElementById('transcriptBox').value.trim();
+      if (!txt) return;
 
-      let translatedText = rawText;
-      if (currentLang === 'Urdu') {
-        translatedText = "[Translated to English]: " + rawText;
-      }
+      const translated = (currentLang === 'Urdu') ? "[Translated to English]: " + txt : txt;
 
-      const newNote = {
+      const note = {
         id: Date.now(),
         category: activeCategory,
-        date: new Date().toISOString(),
-        original: rawText,
-        english: translatedText
+        date: new Date().toLocaleString(),
+        original: txt,
+        english: translated
       };
 
-      notes.unshift(newNote);
-      localStorage.setItem('voicemind_notes', JSON.stringify(notes));
+      notes.unshift(note);
+      localStorage.setItem('vm_notes', JSON.stringify(notes));
 
-      document.getElementById('spokenText').value = '';
-      updateSaveBtnState();
-      alert('Note successfully saved and indexed into repository!');
-      switchTab('repositoryTab', document.querySelectorAll('.navItem')[1]);
+      document.getElementById('transcriptBox').value = '';
+      checkSaveState();
+      alert('Successfully indexed into repository!');
+      switchTab('tabRepo', document.querySelectorAll('.navItem')[1]);
     }
 
-    function filterCategory(btn, cat) {
-      document.querySelectorAll('#repositoryTab .horizontalScroll')[0].querySelectorAll('.catPill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      selectedCatFilter = cat;
-      renderRepository();
+    function filterRepo(el, cat) {
+      el.parentElement.querySelectorAll('.catPill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      activeRepoFilter = cat;
+      renderRepo();
     }
 
-    function filterDate(btn, dateRange) {
-      document.querySelectorAll('#repositoryTab .horizontalScroll')[1].querySelectorAll('.catPill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      selectedDateFilter = dateRange;
-      renderRepository();
+    function renderRepo() {
+      const container = document.getElementById('repoList');
+      const filtered = notes.filter(n => activeRepoFilter === 'All' || n.category === activeRepoFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; color:var(--subtext); padding:30px;">No repository records found.</div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(n => {
+        html += `
+          <div class="repoCard">
+            <div class="repoHeader">
+              <span class="repoTag">${n.category}</span>
+              <span class="repoDate">${n.date}</span>
+            </div>
+            <div class="repoText">${n.english}</div>
+            <div class="toggleLink" onclick="toggleOrig(this)">Show Original Spoken Transcript</div>
+            <div class="repoOriginal">${n.original}</div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
     }
 
-    function toggleSortOrder() {
-      sortNewestFirst = !sortNewestFirst;
+    function toggleOrig(el) {
+      const orig = el.nextElementSibling;
+      if (orig.style.display === 'block') {
+        orig.style.display = 'none';
+        el.innerText = 'Show Original Spoken Transcript';
+      } else {
+        orig.style.display = 'block';
+        el.innerText = 'Hide Original Spoken Transcript';
+      }
+    }
+
+    function sendChat() {
+      const input = document.getElementById('chatInput');
+      const q = input.value.trim();
+      if (!q) return;
+
+      const list = document.getElementById('chatList');
+      list.innerHTML += `<div class="bubble bubbleUser">${q}</div>`;
+      input.value = '';
+      list.scrollTop = list.scrollHeight;
+
+      setTimeout(() => {
+        let reply = `I checked your notes repository. `;
+        const lower = q.toLowerCase();
+        if (lower.includes('idea')) {
+          const count = notes.filter(n => n.category === 'Idea').length;
+          reply += `You have ${count} saved ideas.`;
+        } else if (lower.includes('work')) {
+          const count = notes.filter(n => n.category === 'Work').length;
+          reply += `You have ${count} work repository logs.`;
+        } else {
+          reply += `You currently have ${notes.length} total saved notes across all categories.`;
+        }
+        list.innerHTML += `<div class="bubble bubbleBot">${reply}</div>`;
+        list.scrollTop = list.scrollHeight;
+      }, 400);
+    }
+  </script>
+</body>
+</html>
