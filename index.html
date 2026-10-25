@@ -590,6 +590,10 @@
         <button class="chipBtn" onclick="setTheme('mono')">Mono</button>
       </div>
 
+      <div class="dropdownHeader">Visualizer Mode</div>
+      <div class="dropdownItem" onclick="toggleAnimStyle()" id="animStyleToggleText">🌊 Audio Waveform Mode</div>
+      <div class="dropdownItem" onclick="toggleSpectrumMode()" id="spectrumToggleText">🌈 Multi-Color Bars</div>
+
       <div class="dropdownHeader">Security</div>
       <div class="dropdownItem" onclick="openPasscodeModal()">🔑 Change Passcode</div>
       <div class="dropdownItem" style="color: var(--recordBtn); font-weight: bold;" onclick="logout()">🚪 Logout System</div>
@@ -702,7 +706,7 @@
     let selectedCatFilter = 'All';
     let selectedDateFilter = 'All Dates';
 
-    // Robust passcode recovery & default fallback
+    // Passcode Configuration
     let passcode = localStorage.getItem('voicemind_pass');
     if (!passcode) {
       passcode = '1234';
@@ -715,11 +719,12 @@
     let recognition = null;
     let isRecording = false;
     let visualizerTimer = null;
+    let multiColorMode = false;
 
     // Theme Color Sets
     const themes = {
       light: { bg: '#F8FAFC', card: '#FFFFFF', border: '#CBD5E1', text: '#0F172A', subtext: '#64748B', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#F1F5F9', primaryBtn: '#4F46E5', recordBtn: '#EF4444', saveBtn: '#10B981', dropdownBg: '#FFFFFF' },
-      dark: { bg: '#0F172A', card: '#1E293B', border: '#334155', text: '#F8FAFC', subtext: '#94A3B8', header: '#1E293B', nav: '#1E293B', inputBg: '#0F172A', primaryBtn: '#6366F1', recordBtn: '#F43F5E', saveBtn: '#10B981', dropdownBg: '#1E293B' },
+      dark: { bg: '#0F0F1A', card: '#1A1A2E', border: '#333355', text: '#F8FAFC', subtext: '#94A3B8', header: '#1A1A2E', nav: '#1A1A2E', inputBg: '#121222', primaryBtn: '#6366F1', recordBtn: '#F43F5E', saveBtn: '#10B981', dropdownBg: '#1A1A2E' },
       emerald: { bg: '#F0FDF4', card: '#FFFFFF', border: '#A7F3D0', text: '#064E3B', subtext: '#047857', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#ECFDF5', primaryBtn: '#059669', recordBtn: '#DC2626', saveBtn: '#059669', dropdownBg: '#FFFFFF' },
       cyberpunk: { bg: '#0F051D', card: '#1A0B2E', border: '#9333EA', text: '#F3E8FF', subtext: '#C084FC', header: '#1A0B2E', nav: '#1A0B2E', inputBg: '#120720', primaryBtn: '#A855F7', recordBtn: '#EC4899', saveBtn: '#06B6D4', dropdownBg: '#1A0B2E' },
       ocean: { bg: '#F0F9FF', card: '#FFFFFF', border: '#BAE6FD', text: '#0C4A6E', subtext: '#0284C7', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#E0F2FE', primaryBtn: '#0284C7', recordBtn: '#E11D48', saveBtn: '#0EA5E9', dropdownBg: '#FFFFFF' },
@@ -795,6 +800,18 @@
       document.getElementById('saveBtn').disabled = (text.length === 0);
     }
 
+    // MENU CONFIG HELPERS
+    function toggleAnimStyle() {
+      alert("Audio Waveform Mode is active.");
+      toggleMenu();
+    }
+
+    function toggleSpectrumMode() {
+      multiColorMode = !multiColorMode;
+      document.getElementById('spectrumToggleText').innerText = multiColorMode ? "🌈 Multi-Color Bars (ON)" : "🌈 Multi-Color Bars (OFF)";
+      toggleMenu();
+    }
+
     // SPEECH RECOGNITION IMPLEMENTATION
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -868,11 +885,12 @@
 
     function startVisualizerAnimation() {
       const bars = document.querySelectorAll('.spectrumBar');
+      const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
       visualizerTimer = setInterval(() => {
-        bars.forEach(bar => {
+        bars.forEach((bar, idx) => {
           const height = Math.floor(Math.random() * 55) + 6;
           bar.style.height = height + 'px';
-          bar.style.backgroundColor = themes[currentTheme].primaryBtn;
+          bar.style.backgroundColor = multiColorMode ? colors[idx % colors.length] : themes[currentTheme].primaryBtn;
         });
       }, 100);
     }
@@ -977,84 +995,4 @@
           </div>
         `;
       });
-      listEl.innerHTML = html;
-    }
-
-    function toggleOriginal(el) {
-      const orig = el.nextElementSibling;
-      if (orig.style.display === 'block') {
-        orig.style.display = 'none';
-        el.innerText = 'Show Original Spoken Text';
-      } else {
-        orig.style.display = 'block';
-        el.innerText = 'Hide Original Spoken Text';
-      }
-    }
-
-    // AI CHATBOT ASSISTANT
-    function handleSendMessage() {
-      const inputEl = document.getElementById('chatInput');
-      const q = inputEl.value.trim();
-      if (!q) return;
-
-      const chatList = document.getElementById('chatList');
-      chatList.innerHTML += `<div class="chatBubble chatUser">${q}</div>`;
-      inputEl.value = '';
-      chatList.scrollTop = chatList.scrollHeight;
-
-      setTimeout(() => {
-        let answer = "I checked your repository notes. ";
-        const lowerQ = q.toLowerCase();
-        if (lowerQ.includes('assignment') || lowerQ.includes('task')) {
-          const assignments = notes.filter(n => n.category === 'Assignment');
-          answer += `You have ${assignments.length} saved assignment notes.`;
-        } else if (lowerQ.includes('idea')) {
-          const ideas = notes.filter(n => n.category === 'Idea');
-          answer += `You have ${ideas.length} recorded idea repositories.`;
-        } else {
-          answer += `You currently have a total of ${notes.length} notes stored across categories: Idea, Memory, Work, Assignment, and Personal.`;
-        }
-
-        chatList.innerHTML += `<div class="chatBubble chatBot">${answer}</div>`;
-        chatList.scrollTop = chatList.scrollHeight;
-      }, 500);
-    }
-
-    // MODAL & SECURITY SETTINGS
-    function openPasscodeModal() {
-      toggleMenu();
-      const overlay = document.getElementById('modalOverlay');
-      document.getElementById('modalTitle').innerText = "Change Passcode";
-      document.getElementById('modalBody').innerText = "Enter your new 4-digit security passcode:";
-      document.getElementById('modalContentArea').innerHTML = `<input type="password" id="newPassInput" placeholder="New passcode" />`;
-      document.getElementById('modalActions').innerHTML = `
-        <button class="secondaryBtn" onclick="closeModal()">Cancel</button>
-        <button class="primaryBtn btnSave" onclick="saveNewPasscode()">Save</button>
-      `;
-      overlay.style.display = 'flex';
-    }
-
-    function saveNewPasscode() {
-      const p = document.getElementById('newPassInput').value.trim();
-      if (p.length > 0) {
-        passcode = p;
-        localStorage.setItem('voicemind_pass', p);
-        alert('Passcode updated successfully!');
-        closeModal();
-      } else {
-        alert('Please enter a valid passcode.');
-      }
-    }
-
-    function closeModal() {
-      document.getElementById('modalOverlay').style.display = 'none';
-    }
-
-    function logout() {
-      toggleMenu();
-      document.getElementById('passcodeInput').value = '';
-      document.getElementById('authScreen').style.display = 'flex';
-    }
-  </script>
-</body>
-</html>
+      listEl.innerHTML = html
