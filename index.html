@@ -25,7 +25,6 @@
       flex-direction: column;
     }
 
-    /* THEME VARIABLES (Default Light Slate) */
     :root {
       --bg: #F8FAFC;
       --card: #FFFFFF;
@@ -41,7 +40,6 @@
       --dropdownBg: #FFFFFF;
     }
 
-    /* AUTH LOCK SCREEN */
     #authScreen {
       position: fixed;
       inset: 0;
@@ -76,7 +74,6 @@
       margin-bottom: 20px;
     }
 
-    /* CUSTOM MODAL OVERLAY */
     #modalOverlay {
       display: none;
       position: fixed;
@@ -134,7 +131,6 @@
       margin: 0 !important;
     }
 
-    /* HEADER */
     header {
       background: var(--header);
       border-bottom: 1px solid var(--border);
@@ -161,7 +157,6 @@
       cursor: pointer;
     }
 
-    /* DROPDOWN MENU */
     #dropdownMenu {
       display: none;
       position: absolute;
@@ -217,7 +212,6 @@
       border-bottom: 1px solid var(--inputBg);
     }
 
-    /* MAIN CONTAINER */
     main {
       flex: 1;
       min-height: 0;
@@ -250,19 +244,6 @@
 
     #recordTab.active {
       display: flex;
-    }
-
-    /* Scrollbars */
-    #repositoryTab::-webkit-scrollbar,
-    #recordTab::-webkit-scrollbar,
-    #chatList::-webkit-scrollbar {
-      width: 6px;
-    }
-    #repositoryTab::-webkit-scrollbar-thumb,
-    #recordTab::-webkit-scrollbar-thumb,
-    #chatList::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
     }
 
     label {
@@ -305,7 +286,6 @@
       border-color: var(--saveBtn);
     }
 
-    /* SPECTRUM VISUALIZER */
     .visualizerContainer {
       background: var(--card);
       border: 1px solid var(--border);
@@ -403,7 +383,6 @@
       flex-shrink: 0;
     }
 
-    /* REPOSITORY ENTRY CARD */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -461,7 +440,6 @@
       display: none;
     }
 
-    /* CHATBOT */
     #chatTab {
       display: none;
       flex-direction: column;
@@ -509,7 +487,6 @@
       flex-shrink: 0;
     }
 
-    /* NAVBAR */
     nav {
       background: var(--nav);
       border-top: 1px solid var(--border);
@@ -548,7 +525,7 @@
     <div class="authCard">
       <h2>VoiceMind AI</h2>
       <div class="authSub">Enter your security passcode to unlock</div>
-      <input type="password" id="passcodeInput" placeholder="Enter Passcode (default: 1234)" style="margin-bottom: 14px;" onkeydown="if(event.key==='Enter') handleLogin()" />
+      <input type="password" id="passcodeInput" placeholder="Passcode: 1234" style="margin-bottom: 14px;" onkeydown="if(event.key==='Enter') handleLogin()" />
       <button class="primaryBtn btnRecord" onclick="handleLogin()">Unlock App</button>
     </div>
   </div>
@@ -570,7 +547,6 @@
     <div class="headerTitle" id="appHeaderTitle">🎙️ Record & Translate</div>
     <button class="menuBtn" onclick="toggleMenu()">⚙️ Menu</button>
 
-    <!-- DROPDOWN MENU -->
     <div id="dropdownMenu">
       <div class="dropdownHeader">Translation Language</div>
       <div class="dropdownRow">
@@ -590,9 +566,8 @@
         <button class="chipBtn" onclick="setTheme('mono')">Mono</button>
       </div>
 
-      <div class="dropdownHeader">Visualizer Mode</div>
-      <div class="dropdownItem" onclick="toggleAnimStyle()" id="animStyleToggleText">🌊 Audio Waveform Mode</div>
-      <div class="dropdownItem" onclick="toggleSpectrumMode()" id="spectrumToggleText">🌈 Multi-Color Bars</div>
+      <div class="dropdownHeader">Visualizer Options</div>
+      <div class="dropdownItem" onclick="toggleSpectrumMode()" id="spectrumToggleText">🌈 Multi-Color Bars (OFF)</div>
 
       <div class="dropdownHeader">Security</div>
       <div class="dropdownItem" onclick="openPasscodeModal()">🔑 Change Passcode</div>
@@ -600,7 +575,7 @@
     </div>
   </header>
 
-  <!-- MAIN CONTENT CONTAINER -->
+  <!-- MAIN CONTAINER -->
   <main>
     <!-- TAB 1: RECORD & TRANSLATE -->
     <div id="recordTab" class="tabContent active">
@@ -613,7 +588,6 @@
         <button class="catPill" onclick="selectActiveCategory(this, 'Personal')">Personal</button>
       </div>
 
-      <!-- SPECTRUM VISUALIZER WITH 32 BARS -->
       <div class="visualizerContainer">
         <div class="barsRow" id="barsRow">
           <div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div><div class="spectrumBar"></div>
@@ -670,11 +644,11 @@
     <div id="chatTab" class="tabContent">
       <div id="chatList">
         <div class="chatBubble chatBot">
-          Hello! I am your VoiceMind AI assistant. Ask me anything about your recorded thoughts, notes, or assignments.
+          Hello! I am your VoiceMind AI assistant. Ask me anything about your recorded thoughts or assignments.
         </div>
       </div>
       <div class="chatInputRow">
-        <input type="text" id="chatInput" placeholder="Ask e.g. 'What ideas did I save?'" onkeydown="if(event.key==='Enter') handleSendMessage()" />
+        <input type="text" id="chatInput" placeholder="Ask e.g. 'What assignments do I have?'" onkeydown="if(event.key==='Enter') handleSendMessage()" />
         <button class="primaryBtn btnSave" style="width: auto; padding: 10px 18px;" onclick="handleSendMessage()">Send</button>
       </div>
     </div>
@@ -696,7 +670,7 @@
     </div>
   </nav>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- SCRIPT LOGIC -->
   <script>
     let currentTabId = 'recordTab';
     let currentTheme = 'light';
@@ -706,22 +680,20 @@
     let selectedCatFilter = 'All';
     let selectedDateFilter = 'All Dates';
 
-    // Passcode Configuration
+    // GUARANTEED PASSCODE FALLBACK (forces 1234 if unconfigured/corrupted)
     let passcode = localStorage.getItem('voicemind_pass');
-    if (!passcode) {
+    if (!passcode || passcode.trim() === '') {
       passcode = '1234';
       localStorage.setItem('voicemind_pass', '1234');
     }
 
     let notes = JSON.parse(localStorage.getItem('voicemind_notes') || '[]');
 
-    // Web Speech API Variables
     let recognition = null;
     let isRecording = false;
     let visualizerTimer = null;
     let multiColorMode = false;
 
-    // Theme Color Sets
     const themes = {
       light: { bg: '#F8FAFC', card: '#FFFFFF', border: '#CBD5E1', text: '#0F172A', subtext: '#64748B', header: '#FFFFFF', nav: '#FFFFFF', inputBg: '#F1F5F9', primaryBtn: '#4F46E5', recordBtn: '#EF4444', saveBtn: '#10B981', dropdownBg: '#FFFFFF' },
       dark: { bg: '#0F0F1A', card: '#1A1A2E', border: '#333355', text: '#F8FAFC', subtext: '#94A3B8', header: '#1A1A2E', nav: '#1A1A2E', inputBg: '#121222', primaryBtn: '#6366F1', recordBtn: '#F43F5E', saveBtn: '#10B981', dropdownBg: '#1A1A2E' },
@@ -800,19 +772,13 @@
       document.getElementById('saveBtn').disabled = (text.length === 0);
     }
 
-    // MENU CONFIG HELPERS
-    function toggleAnimStyle() {
-      alert("Audio Waveform Mode is active.");
-      toggleMenu();
-    }
-
     function toggleSpectrumMode() {
       multiColorMode = !multiColorMode;
       document.getElementById('spectrumToggleText').innerText = multiColorMode ? "🌈 Multi-Color Bars (ON)" : "🌈 Multi-Color Bars (OFF)";
       toggleMenu();
     }
 
-    // SPEECH RECOGNITION IMPLEMENTATION
+    // WEB SPEECH API INITIALIZATION
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -933,7 +899,6 @@
       switchTab('repositoryTab', document.querySelectorAll('.navItem')[1]);
     }
 
-    // REPOSITORY RENDERING
     function filterCategory(btn, cat) {
       document.querySelectorAll('#repositoryTab .horizontalScroll')[0].querySelectorAll('.catPill').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
@@ -950,49 +915,3 @@
 
     function toggleSortOrder() {
       sortNewestFirst = !sortNewestFirst;
-      document.getElementById('sortBtn').innerText = sortNewestFirst ? '⏱️ Newest First' : '⏱️ Oldest First';
-      renderRepository();
-    }
-
-    function renderRepository() {
-      const listEl = document.getElementById('entriesList');
-      let filtered = notes.filter(note => {
-        if (selectedCatFilter !== 'All' && note.category !== selectedCatFilter) return false;
-        if (selectedDateFilter !== 'All Dates') {
-          const noteDate = new Date(note.date);
-          const now = new Date();
-          const diffDays = (now - noteDate) / (1000 * 60 * 60 * 24);
-          if (selectedDateFilter === 'Today' && diffDays > 1) return false;
-          if (selectedDateFilter === 'Past 7 Days' && diffDays > 7) return false;
-          if (selectedDateFilter === 'Past 30 Days' && diffDays > 30) return false;
-        }
-        return true;
-      });
-
-      filtered.sort((a, b) => {
-        return sortNewestFirst ? (b.id - a.id) : (a.id - b.id);
-      });
-
-      document.getElementById('noteCounter').innerText = `Showing ${filtered.length} notes`;
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = `<div style="text-align: center; color: var(--subtext); padding: 30px;">No repository records found.</div>`;
-        return;
-      }
-
-      let html = '';
-      filtered.forEach(note => {
-        const dateStr = new Date(note.date).toLocaleString();
-        html += `
-          <div class="card">
-            <div class="cardHeader">
-              <span class="badge badge-${note.category}">${note.category}</span>
-              <span class="dateText">${dateStr}</span>
-            </div>
-            <div class="englishText">${note.english}</div>
-            <div class="toggleText" onclick="toggleOriginal(this)">Show Original Spoken Text</div>
-            <div class="originalText">${note.original}</div>
-          </div>
-        `;
-      });
-      listEl.innerHTML = html
